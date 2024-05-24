@@ -6,7 +6,7 @@
 /*   By: mlaporte <mlaporte@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 13:46:45 by mlaporte          #+#    #+#             */
-/*   Updated: 2024/05/19 22:36:15 by mlaporte         ###   ########.fr       */
+/*   Updated: 2024/05/24 18:01:14 by mlaporte         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 # define PHILOSOPHERS_H
 
 # include <stdlib.h>
+# include <sys/time.h>
 # include <stdio.h>
 # include <pthread.h>
 # include <stdint.h>
@@ -21,6 +22,9 @@
 
 typedef struct s_philo  t_philo;
 typedef struct s_table  t_table;
+
+
+
 
 struct s_philo
 {

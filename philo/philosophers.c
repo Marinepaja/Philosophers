@@ -6,11 +6,35 @@
 /*   By: mlaporte <mlaporte@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 13:47:29 by mlaporte          #+#    #+#             */
-/*   Updated: 2024/05/21 15:23:47 by mlaporte         ###   ########.fr       */
+/*   Updated: 2024/05/24 19:53:49 by mlaporte         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philosophers.h"
+
+long int ft_timestamp(void)
+{
+    static struct timeval  curr;
+    struct timeval  tv;
+    long int             res;
+    
+    if (!curr.tv_sec || !curr.tv_usec)
+    {
+        printf("coucou\n");
+        curr.tv_sec = 0;
+        curr.tv_usec = 0;
+        printf("%ld\n", curr.tv_usec / 1000);
+        printf("%ld\n", curr.tv_sec * 1000);
+    }
+    if (!gettimeofday(&tv, NULL))
+    {printf("%ld\n", tv.tv_sec * 1000);
+    printf("%ld\n", tv.tv_usec / 1000);}
+    printf("%ld\n", (tv.tv_usec - curr.tv_usec) / 1000);
+    res = (tv.tv_sec - curr.tv_sec) * 1000 + (tv.tv_usec - curr.tv_usec) / 1000;
+    curr = tv;
+    printf("res = %ld\n", res);
+    return ((long)res); 
+}
 
 void    put_forks(t_philo *philo, t_table *table)
 {
@@ -47,7 +71,9 @@ void    ft_eat(t_philo *p, t_table *t)
 {
     take_forks(p, t);
     printf("%d took a fork\n", p->num);
+    printf("ti;e to eat %lu\n", t->time_to_eat);
     usleep(t->time_to_eat);
+    printf("after eat time : %ld\n", ft_timestamp());
     put_forks(p, t);
 }
 
@@ -60,13 +86,19 @@ void *do_philo(void *p)
     tmp = p;
     
     printf("hello, %d\n", tmp->num);
-    while (!tmp->table->end)
+    //while (!tmp->table->end)
     {
     if (tmp->num % 2 == 1)
+    {
+        printf("coucou");
         ft_eat(tmp, tmp->table);
+        usleep(tmp->table->time_to_sleep);
+        printf("time after sleep: %ld\n", ft_timestamp());
+        
+    }
     // printf("hello, %d\n", tmp->num);
-        if (tmp->table->nb_philo == 20)
-            tmp->table->end = 1;
+    if (tmp->table->nb_philo == 20)
+        tmp->table->end = 1;
         
     }
     return (0);
@@ -128,13 +160,15 @@ int init_t(t_table *t)
     t = malloc(sizeof(t_table));
 	if (!t)
 		return (EXIT_FAILURE);
-	t->nb_philo = 0;
-	t->time_to_die = 0;
+	t->nb_philo = 6;
+	t->time_to_die = 20;
 	t->time_to_eat = 0;
     t->time_to_sleep = 0;
 	// t->max_eat = -1;
 	t->forks = NULL;
-	t->end = 0;
+	t->end = 1;
+
+    printf("end : %d\n", t->end);
 
 
     // t->threads = malloc(t->nb_philo *sizeof(pthread_t));
@@ -193,6 +227,7 @@ int check_args(int argc, char **argv, t_table *t)
     // printf("t : %ld, %d\n", t->time_to_die, t->time_to_die <= 0);
     t->time_to_eat = ft_atoi(argv[3]);
     t->time_to_sleep = ft_atoi(argv[4]);
+    t->end = 0;
 
     // if (t->nb_philo <= 0 || t->time_to_die <= 0 || 
         // t->time_to_eat <= 0 || t->time_to_sleep <= 0)
@@ -206,13 +241,19 @@ int main(int argc, char **argv)
     //p_thread_mutex_t    mutex;
     t_table     t;
     
+    printf("time : %ld\n", ft_timestamp());
+    
     if (argc < 5 || argc > 6)
         return(printf("Incorrect number of arguments.\n"));
-    if (init_t(&t))
-        return (EXIT_FAILURE);
+    //if (init_t(&t))
+      //  return (EXIT_FAILURE);
+    printf("end : %d\n", t.end);
+    printf("philo : %d\n", t.nb_philo);
+    printf("die : %lu\n", t.time_to_die);
     if (!check_args(argc, argv, &t))
     {
         printf("num : %d\n", t.nb_philo);
+        printf("end : %d\n", t.end);
         if (t.nb_philo > 200)
 		    return(printf("We should not create more than 200 philosophers\n"));
 
