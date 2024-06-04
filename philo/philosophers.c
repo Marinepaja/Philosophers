@@ -6,13 +6,34 @@
 /*   By: mlaporte <mlaporte@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 13:47:29 by mlaporte          #+#    #+#             */
-/*   Updated: 2024/06/01 23:16:54 by mlaporte         ###   ########.fr       */
+/*   Updated: 2024/06/04 15:02:04 by mlaporte         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philosophers.h"
 
 int check_death(t_table *t);
+
+void    exit_all(t_table *t)
+{
+    int     i;
+
+    i = 0;
+    while (i < t->nb_philo)
+    {
+        pthread_detach(t->philo[i].thd);
+        pthread_mutex_destroy(t->forks[i]);
+        free(t->forks[i]);
+        pthread_mutex_destroy(&t->philo[i].status);
+        pthread_mutex_destroy(&t->philo[i].meal_update);
+        //free(&t->philo[i]);
+        i++;
+    }
+    
+    free(t->philo);
+    free(t->forks);
+    // free(t);
+}
 
 void	clear_all(t_table *t)
 {
@@ -110,10 +131,20 @@ void    put_forks(t_philo *philo, t_table *table)
 {
     if (table->nb_philo == 1)
         {        return;}
+    
     //  printf("left fork : %p\n", philo->right_fork);
+    if (philo->num % 2)
+    {
+    pthread_mutex_unlock(philo->left_fork);
+        // printf("right back");
+    pthread_mutex_unlock(philo->right_fork);
+    }
+    else
+    {
     pthread_mutex_unlock(philo->right_fork);
         // printf("right back");
     pthread_mutex_unlock(philo->left_fork);
+    }
         //printf("left back");
     // usleep(table->time_to_eat);
     // pthread_mutex_unlock(philo->left_fork);
@@ -163,9 +194,16 @@ int    take_forks(t_philo *philo, t_table *table)
 			table->end = 1;
         return (EXIT_FAILURE);}
     //  printf("left fork : %p\n", philo->right_fork);
-    if (pthread_mutex_lock(philo->right_fork) || pthread_mutex_lock(philo->left_fork))
-        return (EXIT_FAILURE) ;
+    if (philo->num % 2)
+    {
+        pthread_mutex_lock(philo->right_fork);
+        pthread_mutex_lock(philo->left_fork);
+    }
     else
+    {
+        pthread_mutex_lock(philo->left_fork);
+        pthread_mutex_lock(philo->right_fork);
+    }
     {
         print_msg(table, philo->num, E_FORK, ft_timestamp(table->start_time));
         print_msg(table, philo->num, E_FORK, ft_timestamp(table->start_time));
@@ -177,15 +215,39 @@ int    take_forks(t_philo *philo, t_table *table)
 	return (EXIT_SUCCESS);
 }
 
+int     all_full(t_table *t)
+{
+    int     i;
+
+    i = 0;
+    while (i < t->nb_philo)
+    {
+        if (t->philo[i].nb_meal < t->max_meal)
+            return(EXIT_FAILURE);
+        i++;
+    }
+    return (EXIT_SUCCESS);
+}
+
 void    ft_eat(t_philo *p, t_table *t)
 {
 	if (check_death(t))
 		return ;
-	{
+	if (p->nb_meal < t->max_meal)
+    {
     	take_forks(p, t);
     	my_sleep(t, t->time_to_eat);
 		
     	put_forks(p, t);
+        pthread_mutex_lock(&p->status);
+        p->nb_meal += 1;
+        if (!all_full(t))
+        {
+            pthread_mutex_lock(&t->status);
+            t->end = 1;
+            pthread_mutex_unlock(&t->status);
+        }
+        pthread_mutex_unlock(&p->status);
 		if (!check_death(t))
 		{
     	print_msg(t, p->num, E_SLEEP, ft_timestamp(t->start_time));}
@@ -219,7 +281,7 @@ void *do_philo(void *p)
 			print_msg(tmp->table, tmp->num, E_THINK, ft_timestamp(tmp->table->start_time));
         	// printf("%lu %d is thinking\n", ft_timestamp(tmp->table->start_time), tmp->num);
 		}
-					my_sleep(tmp->table, 5);
+					my_sleep(tmp->table, 0);
         
     }
     else
@@ -256,9 +318,11 @@ t_philo *init_philo(t_table *t)
     while (i < t->nb_philo)
     {
         p[i].num = i + 1;
+        p[i].nb_meal = 0;
         // p = &t->philo[i];
         // printf("philo : %d\n", p[i].num);
 		pthread_mutex_init(&p[i].meal_update, NULL);
+        pthread_mutex_init(&p[i].status, NULL);
         p[i].table = t;
         p[i].meal = t->start_time;
         p[i].left_fork = t->forks[i];
@@ -294,6 +358,7 @@ int   init_mutex(t_table *t)
         i++;
     }
 	pthread_mutex_init(&t->status, NULL);
+    pthread_mutex_init(&t->write, NULL);
 	
     return (EXIT_SUCCESS);
 }
@@ -369,8 +434,12 @@ int ft_thread(t_table *t)
 
 int check_args(int argc, char **argv, t_table *t)
 {
-    (void)argc;
-    // t = malloc (sizeof(t_table));
+    if (argc == 6 && ft_atoi(argv[5]) >= 0)
+        t->max_meal = ft_atoi(argv[5]);
+    else if (argc == 5)
+        t->max_meal = INT_MAX;
+    else
+        return(EXIT_FAILURE);
     if (ft_atoi(argv[1]) < 0 || ft_atoi(argv[2]) < 0 || ft_atoi(argv[3]) < 0 || ft_atoi(argv[4]) < 0)
         return(EXIT_FAILURE);
     t->nb_philo = ft_atoi(argv[1]);
@@ -410,12 +479,14 @@ int main(int argc, char **argv)
         // printf("end : %d\n", t.end);
         if (t->nb_philo > 200)
 		    return(printf("We should not create more than 200 philosophers\n"));
-
+        ft_thread(t);
+        exit_all(t);
         // printf("num : %d\n", t->nb_philo);
         // init_philo(t);
-        ft_thread(t);
     }
     else
         write(2, "Arguments must be a numeric and positive value.\n", 48);
+    free(t);
+    
     return (0);
 }

@@ -6,7 +6,7 @@
 /*   By: mlaporte <mlaporte@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 13:46:45 by mlaporte          #+#    #+#             */
-/*   Updated: 2024/06/01 18:28:17 by mlaporte         ###   ########.fr       */
+/*   Updated: 2024/06/04 10:34:03 by mlaporte         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 # include <pthread.h>
 # include <stdint.h>
 # include <unistd.h>
+# include <limits.h>
 
 typedef struct s_philo  t_philo;
 typedef struct s_table  t_table;
@@ -37,6 +38,7 @@ typedef enum e_state
 struct s_philo
 {
     int             num;
+    int             nb_meal;
     pthread_t       thd;
     pthread_mutex_t	meal_update;
 	pthread_mutex_t	status;
@@ -55,6 +57,7 @@ struct s_table
     t_philo         *philo;
     uint64_t		start_time;
 	int				end;
+    int             max_meal;
     pthread_mutex_t	status;
     pthread_mutex_t	write;
 	int				wait_time;
