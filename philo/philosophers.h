@@ -6,7 +6,7 @@
 /*   By: mlaporte <mlaporte@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 13:46:45 by mlaporte          #+#    #+#             */
-/*   Updated: 2024/06/04 10:34:03 by mlaporte         ###   ########.fr       */
+/*   Updated: 2024/06/06 16:31:25 by mlaporte         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,7 +52,7 @@ struct s_table
 {
     int     nb_philo;
 
-    pthread_t      *threads;
+    pthread_mutex_t thread;
     pthread_mutex_t      **forks;
     t_philo         *philo;
     uint64_t		start_time;
