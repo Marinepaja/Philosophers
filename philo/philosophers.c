@@ -6,7 +6,7 @@
 /*   By: mlaporte <mlaporte@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/05 13:47:29 by mlaporte          #+#    #+#             */
-/*   Updated: 2024/06/06 18:34:31 by mlaporte         ###   ########.fr       */
+/*   Updated: 2024/06/07 00:23:10 by mlaporte         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -212,7 +212,7 @@ void	philo_even(t_philo *tmp)
 {
 	if (!check_death(tmp->table))
 		print_msg(tmp->table, tmp->num, E_THINK, ft_timestamp(tmp->table->start_time));
-    // my_sleep(tmp->table, 1);
+    my_sleep(tmp->table, tmp->table->time_to_eat);
     ft_eat(tmp, tmp->table);
     if (!all_full(tmp->table))
     {      
@@ -227,16 +227,41 @@ void	philo_even(t_philo *tmp)
 	}
 }
 
+void	delay(t_philo *p)
+{
+	if (p->table->nb_philo % 2)
+	{
+		if (p->num == p->table->nb_philo)
+		{
+			print_msg(p->table, p->num, E_THINK, ft_timestamp(p->table->start_time));
+			my_sleep(p->table, (p->table->time_to_eat - 1) * 2);
+		}
+		else if (p->num % 2)
+		{
+			print_msg(p->table, p->num, E_THINK, ft_timestamp(p->table->start_time));
+			my_sleep(p->table, p->table->time_to_eat - 1);
+		}
+	}
+	else
+	{
+		if (!p->num % 2)
+		{
+			print_msg(p->table, p->num, E_THINK, ft_timestamp(p->table->start_time));
+			my_sleep(p->table, p->table->time_to_eat - 1);
+		}
+	}
+			
+}
+
 void *do_philo(void *p)
 {
     t_philo *tmp;
 
     tmp = p;
+	delay(tmp);
     while (!check_death(tmp->table))
     {
-    	if (tmp->num % 2 == 1)
-    	{
-        	ft_eat(tmp, tmp->table);
+			ft_eat(tmp, tmp->table);
 			if (!all_full(tmp->table))
     	    {
     	        pthread_mutex_lock(&tmp->table->status);
@@ -248,12 +273,9 @@ void *do_philo(void *p)
     			print_msg(tmp->table, tmp->num, E_SLEEP, ft_timestamp(tmp->table->start_time));
         		my_sleep(tmp->table, tmp->table->time_to_sleep);		
 				print_msg(tmp->table, tmp->num, E_THINK, ft_timestamp(tmp->table->start_time));
+				if (tmp->table->nb_philo % 2)
+					my_sleep(tmp->table, ft_max(0, 2 * tmp->table->time_to_eat - tmp->table->time_to_sleep - 1));
 			}
-    	}
-    	else
-    	{
-			philo_even(tmp);
-    	}
 	}
     return (0);
 }
@@ -338,8 +360,7 @@ int ft_thread(t_table *t)
 	
 	i = 0;
     init_mutex(t);
-    t->philo = init_philo(t);// p = malloc(t->nb_philo * sizeof(t_philo));
-    // p = NULL;
+    t->philo = init_philo(t);
     pthread_mutex_lock(&t->thread);
     while (i < t->nb_philo)
     {
