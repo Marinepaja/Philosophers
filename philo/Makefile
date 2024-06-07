@@ -16,6 +16,10 @@ SRC_DIR     := ./
 SRCS        := \
 			philosophers.c \
 			utils.c \
+			utils2.c \
+			eat.c \
+			init.c \
+
 
 # Prepend the source directory to each source file
 SRCS        := $(SRCS:%=$(SRC_DIR)/%)
